@@ -252,8 +252,10 @@ all-migrations
           (timbre/info "Conforming " nm)
           (timbre/trace migration)
           (conformity/ensure-conforms dbconnection migration)
-          (when-let [data-fn (get-in migration [nm :migrate-data])]
-            (data-fn dbconnection))
+          (doseq [t (:txes (get migration nm))]
+            (when-let [data-fn (:migrate-data (meta t))]
+              (timbre/info "Applying data migration function: " data-fn)
+              (data-fn dbconnection)))
           (if (conformity/conforms-to? (datomic/db dbconnection) nm)
             (timbre/info "Verified that database conforms to migration" nm)
             (timbre/error "Migration NOT successfully applied: " nm))
